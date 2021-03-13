@@ -97,18 +97,18 @@ def eval_sfen(sfen):
 
     return eval
 
-@tf.function
+
 def weight_variable(list):
     initial = tf.constant(list)
     return tf.Variable(initial)
 
-@tf.function
+
 def basic_value():
     W = weight_variable([100.0, 300.0, 400.0, 500.0, 600.0, 800.0, 1000.0,
                          2000.0, -100.0, -300.0, -400.0, -500.0, -600.0, -800.0, -1000.0])
     return W
 
-@tf.function
+
 class basic_multiply_layer(tf.keras.layers.Layer):
     def __init__(self, units=32, input_dim=32):
         super(basic_multiply_layer, self).__init__()
@@ -117,13 +117,12 @@ class basic_multiply_layer(tf.keras.layers.Layer):
     def call(self, inputs):
         return tf.multiply(inputs,self.w)
 
-@tf.function
+
 def motikoma_value():
 
     W = weight_variable([100.0, 300.0, 400.0, 500.0, 600.0, 800.0, 1000.0])
     return W
 
-@tf.function
 class motikoma_multiply_layer(tf.keras.layers.Layer):
     def __init__(self, units=32, input_dim=32):
         super(motikoma_multiply_layer, self).__init__()
@@ -132,12 +131,11 @@ class motikoma_multiply_layer(tf.keras.layers.Layer):
     def call(self, inputs):
         return tf.multiply(inputs,self.w)
 
-@tf.function
+
 def bias_variable():
     initial = tf.constant(0.1)
     return tf.Variable(initial)
 
-@tf.function
 def create_model():
 
     # for key, value in features.items():
@@ -149,13 +147,11 @@ def create_model():
     # difence_value_b = tf.multiply(features['difence_koma_b'], W_basic_value)
     # difence_value_w = tf.multiply(features['difence_koma_w'], W_basic_value)value
 	with tf.name_scope("komavalue_Block"):
-		W_basic_value = basic_value()
-		inputs_koma_b = Input(shape=(81, 15), name='inputs_koma_b')
 		multiply_layer = basic_multiply_layer()
+
+		inputs_koma_b = Input(shape=(81, 15), name='inputs_koma_b')		
 		multiply_b = multiply_layer(inputs_koma_b)
 		koma_value_b=tf.reduce_sum(multiply_b, axis=[1, 2])
-
-		koma_value_model_b = Model(inputs=inputs_koma_b, outputs=koma_value_b)
 
 		inputs_koma_w = Input(shape=(81, 15), name='inputs_koma_w')
 		multiply_w = multiply_layer(inputs_koma_w)
@@ -165,9 +161,9 @@ def create_model():
 
 	
 	with tf.name_scope("handkomavalue_Block"):
-		W_motikoma_basic_value = motikoma_value()
-		inputs_hand_koma_b = Input(shape=(7), name='inputs_hand_koma_b')
 		motikoma_layer = motikoma_multiply_layer()
+
+		inputs_hand_koma_b = Input(shape=(7), name='inputs_hand_koma_b')		
 		multiply_hand_b = motikoma_layer(inputs_hand_koma_b)
 		hand_value_b=tf.reduce_sum(multiply_hand_b, axis=1)
 
@@ -214,7 +210,7 @@ def create_model():
 	
 	return model
 
-@tf.function
+
 def evaluationFun(features):
 	model = create_model()
 	model.compile(optimizer='adam', loss='mean_absolute_error')
@@ -227,6 +223,7 @@ def evaluationFun(features):
 	inputs = [inputs_koma_b, inputs_koma_w, inputs_hand_koma_b, inputs_hand_koma_w, inputs_atk_koma_b, inputs_atk_koma_w]
 	print(model.predict({'inputs_koma_b': inputs_koma_b, 'inputs_koma_w': inputs_koma_w, 'inputs_hand_koma_b':inputs_hand_koma_b, 'inputs_hand_koma_w': inputs_hand_koma_w, 'inputs_atk_koma_b': inputs_atk_koma_b, 'inputs_atk_koma_w': inputs_atk_koma_w}, verbose= 2))
 	#model.summary()
+
 
 @profile
 def evaluate(board, model):
