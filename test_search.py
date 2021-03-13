@@ -6,7 +6,7 @@ import search
 def test_case1():
     sfen = "lnsgkgsnl/1r5b1/ppppppppp/9/9/9/PPPPPPPPP/1B5R1/LNSGKGSNL b - 1"
     board = shogi.Board(sfen=sfen)
-    m_model = model.create_model()
+    m_model = model.IntuitionModel()
     print(board.kif_str())
     print(search.negamax(board, m_model, 1))
 ### 先手の歩が1枚足りない
