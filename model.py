@@ -3,11 +3,14 @@ import tensorflow as tf
 from tensorflow.keras.layers import Input, Dense, Multiply, Concatenate
 from tensorflow.keras import Sequential, Model
 import shogi
+import search
+import queue
 
 def sfen_to_features(sfen):
 	board = shogi.Board(sfen=sfen)
 	return board_to_features(board)
 
+#@profile
 def board_to_features(board):
     # 駒の配列
     koma_b = [board.piece_at(sq).piece_type if board.piece_at(
@@ -52,12 +55,12 @@ def board_to_features(board):
         hand_koma_b, hand_koma_w = hand_koma_w, hand_koma_b
         # 盤上の駒は交換後、位置をひっくり返す
         koma_b, koma_w = koma_w, koma_b
-        koma_b = np.array([koma_b[shogi.SQUARES_L90(shogi.SQUARES_L90[sq])] for sq in range(81)])
-        koma_w = np.array([koma_w[shogi.SQUARES_L90(shogi.SQUARES_L90[sq])] for sq in range(81)])
+        koma_b = np.array([koma_b[shogi.SQUARES_L90[shogi.SQUARES_L90[sq]]] for sq in range(81)])
+        koma_w = np.array([koma_w[shogi.SQUARES_L90[shogi.SQUARES_L90[sq]]] for sq in range(81)])
         atk_koma_b, atk_koma_w = atk_koma_w, atk_koma_b
-        atk_koma_b = np.array([atk_koma_b[shogi.SQUARES_L90(shogi.SQUARES_L90[sq])]
+        atk_koma_b = np.array([atk_koma_b[shogi.SQUARES_L90[shogi.SQUARES_L90[sq]]]
                                for sq in range(81)])
-        atk_koma_w = np.array([atk_koma_w[shogi.SQUARES_L90(shogi.SQUARES_L90[sq])]
+        atk_koma_w = np.array([atk_koma_w[shogi.SQUARES_L90[shogi.SQUARES_L90[sq]]]
                                for sq in range(81)])
     # 9*9にrehshape
     #koma_b = koma_b.reshape(9, 9, 15)
@@ -90,6 +93,162 @@ def board_to_features(board):
 
     return features
 
+
+def ds_from_features(features, y_features):
+	ret = {}
+	ret['koma_b'] = []
+	ret['koma_w'] = []
+	ret['atk_koma_b'] = []
+	ret['atk_koma_w'] = []
+	ret['hand_koma_b'] = []
+	ret['hand_koma_w'] = []
+	ret['difence_koma_b'] = []
+	ret['difence_koma_w'] = []
+	ret['y_koma_b'] = []
+	ret['y_koma_w'] = []
+	ret['y_atk_koma_b'] = []
+	ret['y_atk_koma_w'] = []
+	ret['y_hand_koma_b'] = []
+	ret['y_hand_koma_w'] = []
+	ret['y_difence_koma_b'] = []
+	ret['y_difence_koma_w'] = []
+
+	for f in features:
+		ret['koma_b'].append(f['koma_b'])
+		ret['koma_w'].append(f['koma_w'])
+		ret['atk_koma_b'].append(f['atk_koma_b'])
+		ret['atk_koma_w'].append(f['atk_koma_w'])
+		ret['hand_koma_b'].append(f['hand_koma_b'])
+		ret['hand_koma_w'].append(f['hand_koma_w'])
+		ret['difence_koma_b'].append(f['difence_koma_b'])
+		ret['difence_koma_w'].append(f['difence_koma_w'])
+
+	ret['y_koma_b'] = y_features['koma_b']
+	ret['y_koma_w'] = y_features['koma_w']
+	ret['y_atk_koma_b'] = y_features['atk_koma_b']
+	ret['y_atk_koma_w'] = y_features['atk_koma_w']
+	ret['y_hand_koma_b'] = y_features['hand_koma_b']
+	ret['y_hand_koma_w'] = y_features['hand_koma_w']
+	ret['y_difence_koma_b'] = y_features['difence_koma_b']
+	ret['y_difence_koma_w'] = y_features['difence_koma_w']
+
+	koma_b = np.array([ret['koma_b']], dtype=float)
+	koma_w = np.array([ret['koma_w']], dtype=float)
+	atk_koma_b = np.array([ret['atk_koma_b']], dtype=float)
+	atk_koma_w = np.array([ret['atk_koma_w']], dtype=float)
+	hand_koma_b = np.array([ret['hand_koma_b']], dtype=float)
+	hand_koma_w = np.array([ret['hand_koma_w']], dtype=float)
+	difence_koma_b = np.array([ret['difence_koma_b']], dtype=float)
+	difence_koma_w = np.array([ret['difence_koma_w']], dtype=float)
+
+	y_koma_b = np.array([ret['y_koma_b']], dtype=float)
+	y_koma_w = np.array([ret['y_koma_w']], dtype=float)
+	y_atk_koma_b = np.array([ret['y_atk_koma_b']], dtype=float)
+	y_atk_koma_w = np.array([ret['y_atk_koma_w']], dtype=float)
+	y_hand_koma_b = np.array([ret['y_hand_koma_b']], dtype=float)
+	y_hand_koma_w = np.array([ret['y_hand_koma_w']], dtype=float)
+	y_difence_koma_b = np.array([ret['y_difence_koma_b']], dtype=float)
+	y_difence_koma_w = np.array([ret['y_difence_koma_w']], dtype=float)
+
+	dataset = tf.data.Dataset.from_tensor_slices(({'koma_b': koma_b, 'koma_w': koma_w, 'atk_koma_b': atk_koma_b, 'atk_koma_w': atk_koma_w, 'hand_koma_b': hand_koma_b, 'hand_koma_w': hand_koma_w, 'difence_koma_b': difence_koma_b, 'difence_koma_w': difence_koma_w, 'koma_b': koma_b, 'y_koma_b': y_koma_b, 'y_koma_w': y_koma_w, 'y_atk_koma_b': y_atk_koma_b, 'y_atk_koma_w': y_atk_koma_w, 'y_hand_koma_b': y_hand_koma_b, 'y_hand_koma_w': y_hand_koma_w, 'y_difence_koma_b': y_difence_koma_b, 'y_difence_koma_w': y_difence_koma_w}))
+	return dataset
+
+def ds_from_features2(features, y_features):
+	koma_b = []
+	koma_w = []
+	atk_koma_b = []
+	atk_koma_w = []
+	hand_koma_b = []
+	hand_koma_w = []
+	difence_koma_b = []
+	difence_koma_w = []
+
+	y_koma_b = []
+	y_koma_w = []
+	y_atk_koma_b = []
+	y_atk_koma_w = []
+	y_hand_koma_b = []
+	y_hand_koma_w = []
+	y_difence_koma_b = []
+	y_difence_koma_w = []
+
+	for move_feature, best_feature in zip(features, y_features):
+		tgt = {}
+		tgt['koma_b'] = []
+		tgt['koma_w'] = []
+		tgt['atk_koma_b'] = []
+		tgt['atk_koma_w'] = []
+		tgt['hand_koma_b'] = []
+		tgt['hand_koma_w'] = []
+		tgt['difence_koma_b'] = []
+		tgt['difence_koma_w'] = []
+		tgt['y_koma_b'] = []
+		tgt['y_koma_w'] = []
+		tgt['y_atk_koma_b'] = []
+		tgt['y_atk_koma_w'] = []
+		tgt['y_hand_koma_b'] = []
+		tgt['y_hand_koma_w'] = []
+		tgt['y_difence_koma_b'] = []
+		tgt['y_difence_koma_w'] = []
+
+		for f in move_feature:
+			tgt['koma_b'].append(f['koma_b'])
+			tgt['koma_w'].append(f['koma_w'])
+			tgt['atk_koma_b'].append(f['atk_koma_b'])
+			tgt['atk_koma_w'].append(f['atk_koma_w'])
+			tgt['hand_koma_b'].append(f['hand_koma_b'])
+			tgt['hand_koma_w'].append(f['hand_koma_w'])
+			tgt['difence_koma_b'].append(f['difence_koma_b'])
+			tgt['difence_koma_w'].append(f['difence_koma_w'])
+
+		tgt['y_koma_b'] = best_feature['koma_b']
+		tgt['y_koma_w'] = best_feature['koma_w']
+		tgt['y_atk_koma_b'] = best_feature['atk_koma_b']
+		tgt['y_atk_koma_w'] = best_feature['atk_koma_w']
+		tgt['y_hand_koma_b'] = best_feature['hand_koma_b']
+		tgt['y_hand_koma_w'] = best_feature['hand_koma_w']
+		tgt['y_difence_koma_b'] = best_feature['difence_koma_b']
+		tgt['y_difence_koma_w'] = best_feature['difence_koma_w']
+	
+		koma_b.append(tgt['koma_b'])
+		koma_w.append(tgt['koma_w'])
+		atk_koma_b.append(tgt['atk_koma_b'])
+		atk_koma_w.append(tgt['atk_koma_w'])
+		hand_koma_b.append(tgt['hand_koma_b'])
+		hand_koma_w.append(tgt['hand_koma_w'])
+		difence_koma_b.append(tgt['difence_koma_b'])
+		difence_koma_w.append(tgt['difence_koma_w'])
+	
+		y_koma_b.append(tgt['y_koma_b'])
+		y_koma_w.append(tgt['y_koma_w'])
+		y_atk_koma_b.append(tgt['y_atk_koma_b'])
+		y_atk_koma_w.append(tgt['y_atk_koma_w'])
+		y_hand_koma_b.append(tgt['y_hand_koma_b'])
+		y_hand_koma_w.append(tgt['y_hand_koma_w'])
+		y_difence_koma_b.append(tgt['y_difence_koma_b'])
+		y_difence_koma_w.append(tgt['y_difence_koma_w'])
+
+	koma_b = np.array(koma_b, dtype=float)
+	koma_w = np.array(koma_w, dtype=float)
+	atk_koma_b = np.array(atk_koma_b, dtype=float)
+	atk_koma_w = np.array(atk_koma_w, dtype=float)
+	hand_koma_b = np.array(hand_koma_b, dtype=float)
+	hand_koma_w = np.array(hand_koma_w, dtype=float)
+	difence_koma_b = np.array(difence_koma_b, dtype=float)
+	difence_koma_w = np.array(difence_koma_w, dtype=float)
+
+	y_koma_b = np.array(y_koma_b, dtype=float)
+	y_koma_w = np.array(y_koma_w, dtype=float)
+	y_atk_koma_b = np.array(y_atk_koma_b, dtype=float)
+	y_atk_koma_w = np.array(y_atk_koma_w, dtype=float)
+	y_hand_koma_b = np.array(y_hand_koma_b, dtype=float)
+	y_hand_koma_w = np.array(y_hand_koma_w, dtype=float)
+	y_difence_koma_b = np.array(y_difence_koma_b, dtype=float)
+	y_difence_koma_w = np.array(y_difence_koma_w, dtype=float)
+
+
+	dataset = tf.data.Dataset.from_tensor_slices(({'koma_b': koma_b, 'koma_w': koma_w, 'atk_koma_b': atk_koma_b, 'atk_koma_w': atk_koma_w, 'hand_koma_b': hand_koma_b, 'hand_koma_w': hand_koma_w, 'difence_koma_b': difence_koma_b, 'difence_koma_w': difence_koma_w, 'koma_b': koma_b, 'y_koma_b': y_koma_b, 'y_koma_w': y_koma_w, 'y_atk_koma_b': y_atk_koma_b, 'y_atk_koma_w': y_atk_koma_w, 'y_hand_koma_b': y_hand_koma_b, 'y_hand_koma_w': y_hand_koma_w, 'y_difence_koma_b': y_difence_koma_b, 'y_difence_koma_w': y_difence_koma_w}))
+	return dataset
 
 def eval_sfen(sfen):
     features = sfen_to_features(sfen)
@@ -187,8 +346,55 @@ class IntuitionModel(Model):
 
 		return merged
 
+	def train_step(self, data):
+		target_features = []
+		best_feature = []
+		with tf.GradientTape() as tape:
+			y_pred = []
+			#for i in range(data['koma_b'].shape[0]):
+			#	tgt = {}
+			#	tgt['inputs_koma_b'] = data['koma_b'][i]
+			#	tgt['inputs_koma_w'] = data['koma_w'][i]
+			#	tgt['inputs_atk_koma_b'] = data['atk_koma_b'][i]
+			#	tgt['inputs_atk_koma_w'] = data['atk_koma_w'][i]
+			#	tgt['inputs_hand_koma_b'] = data['hand_koma_b'][i]
+			#	tgt['inputs_hand_koma_w'] = data['hand_koma_w'][i]
+			#	tgt['inputs_difence_koma_b'] = data['difence_koma_b'][i]
+			#	tgt['inputs_difence_koma_w'] = data['difence_koma_w'][i]
 
-@profile
+			tgt = {}
+			tgt['inputs_koma_b'] = data['koma_b']
+			tgt['inputs_koma_w'] = data['koma_w']
+			tgt['inputs_atk_koma_b'] = data['atk_koma_b']
+			tgt['inputs_atk_koma_w'] = data['atk_koma_w']
+			tgt['inputs_hand_koma_b'] = data['hand_koma_b']
+			tgt['inputs_hand_koma_w'] = data['hand_koma_w']
+			tgt['inputs_difence_koma_b'] = data['difence_koma_b']
+			tgt['inputs_difence_koma_w'] = data['difence_koma_w']
+
+			y_pred = self(tgt, training=True)
+
+			y_tgt = {}
+			y_tgt['inputs_koma_b'] = tf.stack([data['y_koma_b'] for i in range(data['koma_b'].shape[0])])
+			y_tgt['inputs_koma_w'] = tf.stack([data['y_koma_w'] for i in range(data['koma_b'].shape[0])])
+			y_tgt['inputs_atk_koma_b'] = tf.stack([data['y_atk_koma_b'] for i in range(data['koma_b'].shape[0])])
+			y_tgt['inputs_atk_koma_w'] = tf.stack([data['y_atk_koma_w'] for i in range(data['koma_b'].shape[0])])
+			y_tgt['inputs_hand_koma_b'] = tf.stack([data['y_hand_koma_b'] for i in range(data['koma_b'].shape[0])])
+			y_tgt['inputs_hand_koma_w'] = tf.stack([data['y_hand_koma_w'] for i in range(data['koma_b'].shape[0])])
+			y_tgt['inputs_difence_koma_b'] = tf.stack([data['y_difence_koma_b'] for i in range(data['koma_b'].shape[0])])
+			y_tgt['inputs_difence_koma_w'] = tf.stack([data['y_difence_koma_w'] for i in range(data['koma_b'].shape[0])])
+
+			y = self(y_tgt, training=True)
+
+			loss = self.compiled_loss(y, y_pred, regularization_losses=self.losses)
+
+			trainable_vars = self.trainable_variables
+			gradients = tape.gradient(loss, trainable_vars)
+			self.optimizer.apply_gradients(zip(gradients, trainable_vars))
+			return {m.name: m.result() for m in self.metrics}
+
+
+#@profile
 def evaluate(board, model):
 	features = board_to_features(board)
 	inputs_koma_b = np.array([features['koma_b']])
@@ -198,7 +404,9 @@ def evaluate(board, model):
 	inputs_atk_koma_b = np.array([features['atk_koma_b']])
 	inputs_atk_koma_w = np.array([features['atk_koma_w']])
 	inputs = [inputs_koma_b, inputs_koma_w, inputs_hand_koma_b, inputs_hand_koma_w, inputs_atk_koma_b, inputs_atk_koma_w]
-	eval = model.predict({'inputs_koma_b': inputs_koma_b, 'inputs_koma_w': inputs_koma_w, 'inputs_hand_koma_b':inputs_hand_koma_b, 'inputs_hand_koma_w': inputs_hand_koma_w, 'inputs_atk_koma_b': inputs_atk_koma_b, 'inputs_atk_koma_w': inputs_atk_koma_w}, verbose= False)[0]
+	#.put(inputs)
+	#eval = model.predict({'inputs_koma_b': inputs_koma_b, 'inputs_koma_w': inputs_koma_w, 'inputs_hand_koma_b':inputs_hand_koma_b, 'inputs_hand_koma_w': inputs_hand_koma_w, 'inputs_atk_koma_b': inputs_atk_koma_b, 'inputs_atk_koma_w': inputs_atk_koma_w}, verbose= False)[0]
+	eval = float(model({'inputs_koma_b': inputs_koma_b, 'inputs_koma_w': inputs_koma_w, 'inputs_hand_koma_b':inputs_hand_koma_b, 'inputs_hand_koma_w': inputs_hand_koma_w, 'inputs_atk_koma_b': inputs_atk_koma_b, 'inputs_atk_koma_w': inputs_atk_koma_w}, training=False))
 	if board.turn == shogi.WHITE:
 		eval = -eval
 	return eval
