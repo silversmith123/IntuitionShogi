@@ -63,6 +63,3 @@ class CUI:
 			else:
 				self.input(action)
 			self.show()
-
-cui = CUI()
-cui.main()

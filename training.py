@@ -7,8 +7,8 @@ import tensorflow as tf
 from shogi import CSA
 import shogi
 
+import preprocessing
 import model
-import search
 
 def ds_from_board_features(board_features, best_features):
 	koma_b = []
@@ -115,15 +115,15 @@ def learn():
 				if cand_move.usi() == best_move:
 					continue
 				board.push(cand_move)
-				move_features.append(model.board_to_features(board))
+				move_features.append(preprocessing.board_to_features(board))
 				board.pop()
 			board.push(shogi.Move.from_usi(best_move))
 			if len(move_features) == 0:
 				continue
 			board_features.append(move_features)
-			best_features.append(model.board_to_features(board))
+			best_features.append(preprocessing.board_to_features(board))
 
-	learn_set = model.ds_from_features2(board_features, best_features)
+	learn_set = preprocessing.ds_from_features(board_features, best_features)
 
 	original_model.fit(learn_set, epochs=100)
 	original_model.save('./model/intuitionshogi.pb')
