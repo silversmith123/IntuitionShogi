@@ -1,5 +1,6 @@
 
 import preprocessing
+import logging
 from shogi import CSA
 import shogi
 import numpy as np
@@ -20,9 +21,8 @@ class CUI:
 		inputs_atk_koma_w = np.array([features['atk_koma_w']])
 		inputs_difence_koma_b = np.array([features['difence_koma_b']])
 		inputs_difence_koma_w = np.array([features['difence_koma_w']])
+		logging.debug({'inputs_koma_b': inputs_koma_b, 'inputs_koma_w': inputs_koma_w, 'inputs_hand_koma_b':inputs_hand_koma_b, 'inputs_hand_koma_w':inputs_hand_koma_w, 'inputs_atk_koma_b': inputs_atk_koma_b, 'inputs_atk_koma_w': inputs_atk_koma_w, 'inputs_difence_koma_b':inputs_difence_koma_b, 'inputs_difence_koma_w':inputs_difence_koma_w})
 		eval = float(self.model({'inputs_koma_b': inputs_koma_b, 'inputs_koma_w': inputs_koma_w, 'inputs_hand_koma_b':inputs_hand_koma_b, 'inputs_hand_koma_w':inputs_hand_koma_w, 'inputs_atk_koma_b': inputs_atk_koma_b, 'inputs_atk_koma_w': inputs_atk_koma_w, 'inputs_difence_koma_b':inputs_difence_koma_b, 'inputs_difence_koma_w':inputs_difence_koma_w}, training=False))
-		if self.board.turn == shogi.WHITE:
-			eval = -eval
 		return eval
 
 	def forward(self, move):
@@ -40,8 +40,11 @@ class CUI:
 
 	def show(self):
 		print(self.board.kif_str())
-		print(self.eval())
-		print('')
+		if self.board.turn == shogi.BLACK:
+			print('先手番')
+		else:
+			print('後手番')
+		print('評価値:' + str(self.eval()))
 
 	def main(self):
 		print('指し手の表記')
