@@ -38,7 +38,33 @@ class CUI:
 			move = shogi.Move.from_usi(action)
 			self.forward(move)
 
+	def show_feature(self):
+		features = preprocessing.board_to_features(self.board)
+		def _print(feature):
+			for rank in range(9):
+				line = ''
+				for col in range(9):
+					cell = 9 * rank + col
+					val = 0
+					for type in shogi.PIECE_TYPES:
+						val += int(feature[cell][type]) * type
+					line += ' ' +str(val)
+				print(line)
+
+		for type in ['koma_b', 'koma_w', 'atk_koma_b', 'atk_koma_w', 'difence_koma_b', 'difence_koma_w']:
+			print(type)
+			_print(features[type])
+
+		for type in ['hand_koma_b', 'hand_koma_w']:
+			print(type)
+			line = ''
+			for koma in features[type]:
+				line += str(int(koma))
+			print(line)
+
 	def show(self):
+		if self.debug:
+			self.show_feature()
 		print(self.board.kif_str())
 		if self.board.turn == shogi.BLACK:
 			print('先手番')
