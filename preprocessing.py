@@ -13,22 +13,20 @@ def board_to_features(board):
     koma_w = np.array(koma_w)
     koma_w = np.eye(15)[koma_w.reshape(-1)]
     # 攻撃している駒の配列
-    atk_koma_b = np.zeros((81, 15), dtype=float)
-    atk_koma_w = np.zeros((81, 15), dtype=float)
-    difence_koma_b = np.zeros((81, 15), dtype=float)
-    difence_koma_w = np.zeros((81, 15), dtype=float)
+    atk_koma_b = np.zeros((81, 15), dtype=np.float32)
+    atk_koma_w = np.zeros((81, 15), dtype=np.float32)
+    difence_koma_b = np.zeros((81, 15), dtype=np.float32)
+    difence_koma_w = np.zeros((81, 15), dtype=np.float32)
 
     for sq in range(81):
+        if board.piece_at(sq) != None and board.piece_at(sq).color == shogi.BLACK:
+            difence_koma_b[sq][board.piece_type_at(sq)] = 1
+        if board.piece_at(sq) != None and board.piece_at(sq).color == shogi.WHITE:
+            difence_koma_w[sq][board.piece_type_at(sq)] = 1
         for atk_sq in board.attackers(shogi.BLACK, sq):
-            if board.piece_at(atk_sq):
-                atk_koma_b[sq][board.piece_at(atk_sq).piece_type] = 1
-            if board.piece_at(atk_sq):
-                difence_koma_b[sq][board.piece_at(atk_sq).piece_type] = 1
+            atk_koma_b[sq][board.piece_type_at(atk_sq)] = 1
         for atk_sq in board.attackers(shogi.WHITE, sq):
-            if board.piece_at(atk_sq):
-                atk_koma_w[sq][board.piece_at(atk_sq).piece_type] = 1
-            if board.piece_at(atk_sq):
-                difence_koma_w[sq][board.piece_at(atk_sq).piece_type] = 1
+            atk_koma_w[sq][board.piece_type_at(atk_sq)] = 1
 
         # 持ち駒
     hand_koma_b = [0] * 7
@@ -64,25 +62,52 @@ def board_to_features(board):
     features['koma_w'] = koma_w
     features['atk_koma_b'] = atk_koma_b
     features['atk_koma_w'] = atk_koma_w
-    features['hand_koma_b'] = hand_koma_b
-    features['hand_koma_w'] = hand_koma_w
     features['difence_koma_b'] = difence_koma_b
     features['difence_koma_w'] = difence_koma_w
+    features['hand_koma_b'] = hand_koma_b
+    features['hand_koma_w'] = hand_koma_w
     # features['eval'].append(eval)
     # features['gameResult'].append(gameResult)
     # features['turn']=np.array(features['turn'])
-    features['koma_b'] = np.array(features['koma_b'], dtype=float)
-    features['koma_w'] = np.array(features['koma_w'], dtype=float)
-    features['atk_koma_b'] = np.array(features['atk_koma_b'], dtype=float)
-    features['atk_koma_w'] = np.array(features['atk_koma_w'], dtype=float)
-    features['difence_koma_b'] = np.array(features['difence_koma_b'], dtype=float)
-    features['difence_koma_w'] = np.array(features['difence_koma_w'], dtype=float)
-    features['hand_koma_b'] = np.array(features['hand_koma_b'], dtype=float)
-    features['hand_koma_w'] = np.array(features['hand_koma_w'], dtype=float)
+    features['koma_b'] = np.array(features['koma_b'], dtype=np.float32)
+    features['koma_w'] = np.array(features['koma_w'], dtype=np.float32)
+    features['atk_koma_b'] = np.array(features['atk_koma_b'], dtype=np.float32)
+    features['atk_koma_w'] = np.array(features['atk_koma_w'], dtype=np.float32)
+    features['difence_koma_b'] = np.array(features['difence_koma_b'], dtype=np.float32)
+    features['difence_koma_w'] = np.array(features['difence_koma_w'], dtype=np.float32)
+    features['hand_koma_b'] = np.array(features['hand_koma_b'], dtype=np.float32)
+    features['hand_koma_w'] = np.array(features['hand_koma_w'], dtype=np.float32)
     # features['eval']=np.array(features['eval'])
     # features['gameResult']=np.array(features['gameResult'])
 
     return features
+
+# 未完成
+def update_features(board, move, features):
+	move_koma = board.piece_at(move.from_square)
+	atked_koma = board.piece_at(move.to_square)
+	board.push(move)
+	# 駒の位置 移動元の駒は無くなる。移動先の駒は置き換えられる。
+	
+	features['koma_w'][move.from_square][move_koma] = 0
+	moved_koma = board.piece_at(move.to_square)
+	if move_koma.color == shogi.BLACK:
+		features['koma_b'][move.to_square][move_koma.piece_type] = 0
+	else:
+		features['koma_w'][move.to_square][move_koma.piece_type] = 0
+
+	# 持ち駒 打った場合、減る。取った場合、増える。
+	p_b= board.pieces_in_hand[shogi.BLACK]
+	p_w= board.pieces_in_hand[shogi.WHITE]
+	from_hand_type = shogi.PIECE_PROMOTED.index(moved_koma.piece_type)
+	to_hand_type = shogi.PIECE_PROMOTED.index(atked_koma.piece_type)
+	features['hand_koma_b'][shogi.PIECE_TYPES.index(from_hand_type)] = p_b[from_hand_type]
+	features['hand_koma_w'][shogi.PIECE_TYPES.index(from_hand_type)] = p_w[from_hand_type]
+	features['hand_koma_b'][shogi.PIECE_TYPES.index(to_hand_type)] = p_b[to_hand_type]
+	features['hand_koma_w'][shogi.PIECE_TYPES.index(to_hand_type)] = p_w[to_hand_type]
+
+
+    # 攻撃している駒の配列 元々攻撃していたマス、移動後に攻撃するようになったマス、取られる駒がとるようになったマス、飛びコマのマスが変化
 
 def ds_from_features(features, y_features):
 	koma_b = []
@@ -119,8 +144,6 @@ def ds_from_features(features, y_features):
 		tgt['y_atk_koma_w'] = []
 		tgt['y_hand_koma_b'] = []
 		tgt['y_hand_koma_w'] = []
-		tgt['y_difence_koma_b'] = []
-		tgt['y_difence_koma_w'] = []
 
 		for f in move_feature:
 			tgt['koma_b'].append(f['koma_b'])
@@ -178,5 +201,5 @@ def ds_from_features(features, y_features):
 	y_difence_koma_w = np.array(y_difence_koma_w, dtype=float)
 
 
-	dataset = tf.data.Dataset.from_tensor_slices(({'koma_b': koma_b, 'koma_w': koma_w, 'atk_koma_b': atk_koma_b, 'atk_koma_w': atk_koma_w, 'hand_koma_b': hand_koma_b, 'hand_koma_w': hand_koma_w, 'difence_koma_b': difence_koma_b, 'difence_koma_w': difence_koma_w, 'koma_b': koma_b, 'y_koma_b': y_koma_b, 'y_koma_w': y_koma_w, 'y_atk_koma_b': y_atk_koma_b, 'y_atk_koma_w': y_atk_koma_w, 'y_hand_koma_b': y_hand_koma_b, 'y_hand_koma_w': y_hand_koma_w, 'y_difence_koma_b': y_difence_koma_b, 'y_difence_koma_w': y_difence_koma_w}))
+	dataset = tf.data.Dataset.from_tensor_slices(({'koma_b': koma_b, 'koma_w': koma_w, 'atk_koma_b': atk_koma_b, 'atk_koma_w': atk_koma_w, 'hand_koma_b': hand_koma_b, 'hand_koma_w': hand_koma_w, 'difence_koma_b': difence_koma_b, 'difence_koma_w': difence_koma_w, 'y_koma_b': y_koma_b, 'y_koma_w': y_koma_w, 'y_atk_koma_b': y_atk_koma_b, 'y_atk_koma_w': y_atk_koma_w, 'y_hand_koma_b': y_hand_koma_b, 'y_hand_koma_w': y_hand_koma_w, 'y_difence_koma_b': y_difence_koma_b, 'y_difence_koma_w': y_difence_koma_w}))
 	return dataset
