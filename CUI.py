@@ -10,6 +10,7 @@ import model
 class CUI:
 
 	def __init__(self):
+		self.debug = True
 		self.model = model.IntuitionModel()
 		self.model.compile(optimizer="Adam", loss="mse", metrics=["mae"], run_eagerly=True)
 
