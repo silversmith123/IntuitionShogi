@@ -73,11 +73,24 @@ class IntuitionModel(Model):
 		atk_multiply_b = tf.reshape(atk_multiply_b, [-1, 9, 9, 15])
 		atk_multiply_w = self.basic_multiply_layer(inputs_atk_koma_w)
 		atk_multiply_w = tf.reshape(atk_multiply_w, [-1, 9, 9, 15])
+		atk_num_b = tf.reshape(inputs_atk_koma_b, [-1, 9, 9, 15])
+		atk_num_w = tf.reshape(inputs_atk_koma_b, [-1, 9, 9, 15])
 
 		atk_value_max_b = tf.reduce_max(atk_multiply_b, axis=-1)
-		atk_value_total_b = tf.reduce_sum(atk_multiply_b, axis=-1)
 		atk_value_max_w = tf.reduce_max(atk_multiply_w, axis=-1)
-		atk_value_total_w = tf.reduce_sum(atk_multiply_w, axis=-1)
+		atk_num_b = tf.reduce_max(atk_num_b, axis=-1)
+		atk_num_w = tf.reduce_max(atk_num_w, axis=-1)
+
+		inputs_difence_koma_b = inputs['inputs_difence_koma_b']
+		inputs_difence_koma_w = inputs['inputs_difence_koma_w']
+		difence_multiply_b = self.basic_multiply_layer(inputs_difence_koma_b)
+		difence_multiply_b = tf.reshape(difence_multiply_b, [-1, 9, 9, 15])
+		difence_multiply_w = self.basic_multiply_layer(inputs_difence_koma_w)
+		difence_multiply_w = tf.reshape(difence_multiply_w, [-1, 9, 9, 15])
+
+		difence_value_b = tf.reduce_max(difence_multiply_b, axis=-1)
+		difence_value_w = tf.reduce_max(difence_multiply_w, axis=-1)
+
 
 		if self.debug:
 			print('koma_value_b')
@@ -90,14 +103,18 @@ class IntuitionModel(Model):
 			print(hand_value_w)
 			print('atk_value_max_b')
 			print(atk_value_max_b)
-			print('atk_value_total_b')
-			print(atk_value_total_b)
+			print('atk_num_b')
+			print(atk_num_b)
 			print('atk_value_max_w')
 			print(atk_value_max_w)
-			print('atk_value_total_w')
-			print(atk_value_total_w)
+			print('atk_num_w')
+			print(atk_num_w)
+			print('difence_value_b')
+			print(difence_value_b)
+			print('difence_value_w')
+			print(difence_value_w)
 
-		atk_value=tf.stack([atk_value_max_b, atk_value_total_b, atk_value_max_w, atk_value_total_w], axis=-1)
+		atk_value=tf.stack([atk_value_max_b, atk_num_b, atk_value_max_w, atk_num_w, difence_value_b, difence_value_w], axis=-1)
 
 		atk_conv = self.atk_conv(atk_value)
 		# プーリング層作成
