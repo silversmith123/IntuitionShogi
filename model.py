@@ -1,3 +1,4 @@
+import sys
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras.layers import Input, Dense, Multiply, Concatenate
@@ -12,8 +13,8 @@ def weight_variable(list):
 class basic_multiply_layer(tf.keras.layers.Layer):
     def __init__(self, units=32, input_dim=32):
         super(basic_multiply_layer, self).__init__()
-        self.w = weight_variable([100.0, 300.0, 400.0, 500.0, 600.0, 800.0, 1000.0,
-                         2000.0, -100.0, -300.0, -400.0, -500.0, -600.0, -800.0, -1000.0])
+        self.w = weight_variable([0.0, 100.0, 300.0, 400.0, 500.0, 600.0, 800.0, 1000.0,
+                         2000.0, 600.0, 650.0, 700.0, 1000.0, 1100.0, 1200])
 
     def call(self, inputs):
         return tf.multiply(inputs,self.w)
@@ -34,6 +35,7 @@ def bias_variable():
 class IntuitionModel(Model):
 
 	def __init__(self):
+		self.debug = True
 		super(IntuitionModel, self).__init__()
 		self.basic_multiply_layer = basic_multiply_layer()
 		self.motikoma_multiply_layer = motikoma_multiply_layer()
@@ -47,7 +49,6 @@ class IntuitionModel(Model):
 			data_format='channels_last'
 		)
 
-	@tf.function
 	def call(self, inputs):
 		inputs_koma_b = inputs['inputs_koma_b']
 		multiply_b = self.basic_multiply_layer(inputs_koma_b)
@@ -76,6 +77,24 @@ class IntuitionModel(Model):
 		atk_value_total_b = tf.reduce_sum(atk_multiply_b, axis=-1)
 		atk_value_max_w = tf.reduce_max(atk_multiply_w, axis=-1)
 		atk_value_total_w = tf.reduce_sum(atk_multiply_w, axis=-1)
+
+		if self.debug:
+			print('koma_value_b')
+			print(koma_value_b)
+			print('koma_value_w')
+			print(koma_value_w)
+			print('hand_value_b')
+			print(hand_value_b)
+			print('hand_value_w')
+			print(hand_value_w)
+			print('atk_value_max_b')
+			print(atk_value_max_b)
+			print('atk_value_total_b')
+			print(atk_value_total_b)
+			print('atk_value_max_w')
+			print(atk_value_max_w)
+			print('atk_value_total_w')
+			print(atk_value_total_w)
 
 		atk_value=tf.stack([atk_value_max_b, atk_value_total_b, atk_value_max_w, atk_value_total_w], axis=-1)
 

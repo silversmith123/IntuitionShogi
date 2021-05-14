@@ -5,11 +5,14 @@ from shogi import CSA
 import shogi
 import numpy as np
 import tensorflow as tf
+import model
 
 class CUI:
 
 	def __init__(self):
-		self.model = tf.keras.models.load_model('./model/intuitionshogi.pb')
+		self.debug = True
+		self.model = model.IntuitionModel()
+		self.model.compile(optimizer="Adam", loss="mse", metrics=["mae"], run_eagerly=True)
 
 	def eval(self):
 		features = preprocessing.board_to_features(self.board)
@@ -21,8 +24,7 @@ class CUI:
 		inputs_atk_koma_w = np.array([features['atk_koma_w']])
 		inputs_difence_koma_b = np.array([features['difence_koma_b']])
 		inputs_difence_koma_w = np.array([features['difence_koma_w']])
-		logging.debug({'inputs_koma_b': inputs_koma_b, 'inputs_koma_w': inputs_koma_w, 'inputs_hand_koma_b':inputs_hand_koma_b, 'inputs_hand_koma_w':inputs_hand_koma_w, 'inputs_atk_koma_b': inputs_atk_koma_b, 'inputs_atk_koma_w': inputs_atk_koma_w, 'inputs_difence_koma_b':inputs_difence_koma_b, 'inputs_difence_koma_w':inputs_difence_koma_w})
-		eval = float(self.model({'inputs_koma_b': inputs_koma_b, 'inputs_koma_w': inputs_koma_w, 'inputs_hand_koma_b':inputs_hand_koma_b, 'inputs_hand_koma_w':inputs_hand_koma_w, 'inputs_atk_koma_b': inputs_atk_koma_b, 'inputs_atk_koma_w': inputs_atk_koma_w, 'inputs_difence_koma_b':inputs_difence_koma_b, 'inputs_difence_koma_w':inputs_difence_koma_w}, training=False))
+		eval = float(self.model.call({'inputs_koma_b': inputs_koma_b, 'inputs_koma_w': inputs_koma_w, 'inputs_hand_koma_b':inputs_hand_koma_b, 'inputs_hand_koma_w':inputs_hand_koma_w, 'inputs_atk_koma_b': inputs_atk_koma_b, 'inputs_atk_koma_w': inputs_atk_koma_w, 'inputs_difence_koma_b':inputs_difence_koma_b, 'inputs_difence_koma_w':inputs_difence_koma_w}))
 		return eval
 
 	def forward(self, move):
