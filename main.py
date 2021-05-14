@@ -6,6 +6,5 @@ parser.add_argument('--debug', action='store_true')
 args = parser.parse_args()
 
 cui = CUI.CUI()
-if args.debug:
-	cui.debug = True
+cui.debug = args.debug
 cui.main()

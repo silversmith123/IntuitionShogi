@@ -1,3 +1,4 @@
+import datetime
 import glob
 import itertools
 import logging
@@ -101,11 +102,13 @@ def ds_from_board_features(board_features, best_features):
 
 def learn():
 	logging.basicConfig(format='%(asctime)s:%(message)s', level=logging.DEBUG)
+	log_dir = "./logs/fit/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 	original_model = model.IntuitionModel()
 	original_model.compile(optimizer="Adam", loss="mse", metrics=["mae"])
+	tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
 	board_features = []
 	best_features = []
-	for csa_name in itertools.islice(glob.glob("./kif/*/*.csa"), 5):
+	for csa_name in itertools.islice(glob.glob("./kif/*/*.csa"), 1):
 		logging.info(csa_name)
 		kif = CSA.Parser().parse_str(open(csa_name).read())
 		board = shogi.Board(kif[0]['sfen'])
@@ -125,7 +128,7 @@ def learn():
 
 	learn_set = preprocessing.ds_from_features(board_features, best_features)
 
-	original_model.fit(learn_set, epochs=100)
+	original_model.fit(learn_set, epochs=1, callbacks=[tensorboard_callback])
 	original_model.save('./model/intuitionshogi.pb')
 
 learn()
