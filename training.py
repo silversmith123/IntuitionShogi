@@ -100,7 +100,7 @@ def ds_from_board_features(board_features, best_features):
 	dataset = tf.data.Dataset.from_tensor_slices(({'koma_b': koma_b, 'koma_w': koma_w, 'atk_koma_b': atk_koma_b, 'atk_koma_w': atk_koma_w, 'hand_koma_b': hand_koma_b, 'hand_koma_w': hand_koma_w, 'difence_koma_b': difence_koma_b, 'difence_koma_w': difence_koma_w, 'koma_b': koma_b, 'y_koma_b': y_koma_b, 'y_koma_w': y_koma_w, 'y_atk_koma_b': y_atk_koma_b, 'y_atk_koma_w': y_atk_koma_w, 'y_hand_koma_b': y_hand_koma_b, 'y_hand_koma_w': y_hand_koma_w, 'y_difence_koma_b': y_difence_koma_b, 'y_difence_koma_w': y_difence_koma_w}))
 	return dataset
 
-@profile
+
 def learn():
 	logging.basicConfig(format='%(asctime)s:%(message)s', level=logging.DEBUG)
 	log_dir = "./logs/fit/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
