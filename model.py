@@ -35,7 +35,7 @@ def bias_variable():
 class IntuitionModel(Model):
 
 	def __init__(self):
-		self.debug = True
+		self.debug = False
 		super(IntuitionModel, self).__init__()
 		self.basic_multiply_layer = basic_multiply_layer()
 		self.motikoma_multiply_layer = motikoma_multiply_layer()
@@ -49,6 +49,7 @@ class IntuitionModel(Model):
 			data_format='channels_last'
 		)
 
+	@tf.function
 	def call(self, inputs):
 		inputs_koma_b = inputs['inputs_koma_b']
 		multiply_b = self.basic_multiply_layer(inputs_koma_b)
