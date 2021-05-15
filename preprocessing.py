@@ -1,6 +1,36 @@
 import numpy as np
 import tensorflow as tf
 import shogi
+from tensorflow.python.data.ops.dataset_ops import make_initializable_iterator
+
+def swap(features):
+	# 持ち駒は交換するだけ
+	koma_b = features['koma_b']
+	koma_w = features['koma_w']
+	hand_koma_b = features['hand_koma_b']
+	hand_koma_w = features['hand_koma_w']
+	atk_koma_b = features['atk_koma_b']
+	atk_koma_w = features['atk_koma_w']
+
+	hand_koma_b, hand_koma_w = hand_koma_w, hand_koma_b
+	# 盤上の駒は交換後、位置をひっくり返す
+	koma_b, koma_w = koma_w, koma_b
+	koma_b = np.array([koma_b[shogi.SQUARES_L90[shogi.SQUARES_L90[sq]]] for sq in range(81)])
+	koma_w = np.array([koma_w[shogi.SQUARES_L90[shogi.SQUARES_L90[sq]]] for sq in range(81)])
+	atk_koma_b, atk_koma_w = atk_koma_w, atk_koma_b
+	atk_koma_b = np.array([atk_koma_b[shogi.SQUARES_L90[shogi.SQUARES_L90[sq]]]
+							for sq in range(81)])
+	atk_koma_w = np.array([atk_koma_w[shogi.SQUARES_L90[shogi.SQUARES_L90[sq]]]
+							for sq in range(81)])
+
+	features['koma_b'] = koma_b
+	features['koma_w'] = koma_w
+	features['hand_koma_b'] = hand_koma_b
+	features['hand_koma_w'] = hand_koma_w
+	features['atk_koma_b'] = atk_koma_b
+	features['atk_koma_w'] = atk_koma_w
+
+	return features
 
 def board_to_features(board):
     # 駒の配列
@@ -20,13 +50,13 @@ def board_to_features(board):
 
     for sq in range(81):
         if board.piece_at(sq) != None and board.piece_at(sq).color == shogi.BLACK:
-            difence_koma_b[sq][board.piece_type_at(sq)] = 1
+            difence_koma_b[sq][board.piece_type_at(sq)] += 1
         if board.piece_at(sq) != None and board.piece_at(sq).color == shogi.WHITE:
-            difence_koma_w[sq][board.piece_type_at(sq)] = 1
+            difence_koma_w[sq][board.piece_type_at(sq)] += 1
         for atk_sq in board.attackers(shogi.BLACK, sq):
-            atk_koma_b[sq][board.piece_type_at(atk_sq)] = 1
+            atk_koma_b[sq][board.piece_type_at(atk_sq)] += 1
         for atk_sq in board.attackers(shogi.WHITE, sq):
-            atk_koma_w[sq][board.piece_type_at(atk_sq)] = 1
+            atk_koma_w[sq][board.piece_type_at(atk_sq)] += 1
 
         # 持ち駒
     hand_koma_b = [0] * 7
@@ -82,32 +112,105 @@ def board_to_features(board):
 
     return features
 
-# 未完成
 def update_features(board, move, features):
-	move_koma = board.piece_at(move.from_square)
-	atked_koma = board.piece_at(move.to_square)
-	board.push(move)
-	# 駒の位置 移動元の駒は無くなる。移動先の駒は置き換えられる。
-	
-	features['koma_w'][move.from_square][move_koma] = 0
-	moved_koma = board.piece_at(move.to_square)
-	if move_koma.color == shogi.BLACK:
-		features['koma_b'][move.to_square][move_koma.piece_type] = 0
-	else:
-		features['koma_w'][move.to_square][move_koma.piece_type] = 0
+	def reverse(sq):
+		return shogi.SQUARES_L90[shogi.SQUARES_L90[sq]]
 
-	# 持ち駒 打った場合、減る。取った場合、増える。
+	def reset_atk_feature(piece_type, square, occupied, turn, feature):
+		moves = board.attacks_from(piece_type, square, occupied, turn)
+		sq = shogi.bit_scan(moves)
+		while sq != -1 and sq is not None:
+			if turn == shogi.BLACK:
+				feature[sq][piece_type] -= 1
+			else:
+				feature[reverse(sq)][piece_type] -= 1
+			sq = shogi.bit_scan(moves, sq + 1)
+		return feature
+
+	def add_atk_feature(piece_type, square, occupied, turn, feature):
+		moves = board.attacks_from(piece_type, square, occupied, turn)
+		sq = shogi.bit_scan(moves)
+		while sq != -1 and sq is not None:
+			if turn == shogi.BLACK:
+				feature[sq][piece_type] += 1
+			else:
+				feature[reverse(sq)][piece_type] += 1
+			sq = shogi.bit_scan(moves, sq + 1)
+		return feature
+
+	move_koma = board.piece_at(move.from_square)
+	# 駒の位置 移動元の駒は無くなる。移動先の駒は置き換えられる。
+	if board.turn == shogi.BLACK:
+		features['koma_b'][move.from_square][board.piece_type_at(move.from_square)] = 0
+	else:
+		features['koma_b'][reverse(move.from_square)][board.piece_type_at(move.from_square)] = 0
+
+	# コマの攻撃
+	# コマを動かす手
+	if move_koma:
+		# 元々攻撃していたマスを削除
+		features['atk_koma_b'] = reset_atk_feature(move_koma.piece_type, move.from_square, board.occupied, board.turn, features['atk_koma_b'])
+		# 元のマス目を攻撃していた敵のコマを削除
+		move_koma_attackers = board.attackers(board.turn ^ 1, move.from_square)
+		for sq in move_koma_attackers:
+			features['atk_koma_w'] = reset_atk_feature(board.piece_type_at(sq), sq, board.occupied, board.turn ^ 1, features['atk_koma_w'])
+		# 元のマス目を攻撃していた味方のコマを削除
+		move_koma_ally_attackers = board.attackers(board.turn, move.from_square)
+		for sq in move_koma_attackers:
+			features['atk_koma_b'] = reset_atk_feature(board.piece_type_at(sq), sq, board.occupied, board.turn, features['atk_koma_b'])
+
+	# 取られるコマが攻撃していたマスを削除
+	atked_koma = board.piece_at(move.to_square)
+	if atked_koma:
+		features['atk_koma_w'] = reset_atk_feature(atked_koma.piece_type, move.from_square, board.occupied, board.turn, features['atk_koma_w'])
+	# 取られるマスを攻撃していた敵の駒を削除
+	atked_koma_attackers = board.attackers(board.turn ^ 1, move.to_square)
+	for sq in atked_koma_attackers:
+		features['atk_koma_w'] = reset_atk_feature(board.piece_type_at(sq), sq, board.occupied, board.turn ^ 1, features['atk_koma_w'])
+	# 取られるマスを攻撃していた味方の駒を削除
+	atked_koma_ally_attackers = board.attackers(board.turn, move.to_square)
+	for sq in atked_koma_attackers:
+		features['atk_koma_b'] = reset_atk_feature(board.piece_type_at(sq), sq, board.occupied, board.turn, features['atk_koma_b'])
+
+	# 盤面を動かす
+	board.push(move)
+	features = swap(features)
+	# 駒の位置 移動元の駒は無くなる。移動先の駒は置き換えられる。
+	moved_koma = board.piece_at(move.to_square)
+	if board.turn == shogi.BLACK:
+		features['koma_w'][reverse(move.to_square)][move_koma.piece_type] = 1
+	else:
+		features['koma_w'][move.to_square][move_koma.piece_type] = 1
+
+	# 持ち駒 先後関係なく更新
 	p_b= board.pieces_in_hand[shogi.BLACK]
 	p_w= board.pieces_in_hand[shogi.WHITE]
-	from_hand_type = shogi.PIECE_PROMOTED.index(moved_koma.piece_type)
-	to_hand_type = shogi.PIECE_PROMOTED.index(atked_koma.piece_type)
-	features['hand_koma_b'][shogi.PIECE_TYPES.index(from_hand_type)] = p_b[from_hand_type]
-	features['hand_koma_w'][shogi.PIECE_TYPES.index(from_hand_type)] = p_w[from_hand_type]
-	features['hand_koma_b'][shogi.PIECE_TYPES.index(to_hand_type)] = p_b[to_hand_type]
-	features['hand_koma_w'][shogi.PIECE_TYPES.index(to_hand_type)] = p_w[to_hand_type]
 
+	from_hand_type = moved_koma.piece_type
+	if from_hand_type >= shogi.PROM_PAWN:
+		from_hand_type = shogi.PIECE_PROMOTED.index(from_hand_type)
+	features['hand_koma_b'][from_hand_type] = p_b[from_hand_type]
+	features['hand_koma_w'][from_hand_type] = p_w[from_hand_type]
 
-    # 攻撃している駒の配列 元々攻撃していたマス、移動後に攻撃するようになったマス、取られる駒がとるようになったマス、飛びコマのマスが変化
+	if atked_koma:
+		to_hand_type = atked_koma.piece_type
+		if to_hand_type >= shogi.PROM_PAWN:
+			to_hand_type = shogi.PIECE_PROMOTED.index(to_hand_type)
+		features['hand_koma_b'][to_hand_type] = p_b[to_hand_type]
+		features['hand_koma_w'][to_hand_type] = p_w[to_hand_type]
+
+	# コマの攻撃 注 取られた駒の攻撃はない
+	# 移動後のコマの攻撃
+	features['atk_koma_w'] = add_atk_feature(move_koma.piece_type, move.from_square, board.occupied, board.turn ^ 1, features['atk_koma_w'])
+	# 元のマス目を攻撃していた敵のコマを追加
+	for sq in move_koma_attackers:
+		features['atk_koma_b'] = add_atk_feature(board.piece_type_at(sq), sq, board.occupied, board.turn, features['atk_koma_b'])
+	# 元のマス目を攻撃していた味方のコマを追加
+	for sq in move_koma_attackers:
+		features['atk_koma_w'] = add_atk_feature(board.piece_type_at(sq), sq, board.occupied, board.turn ^ 1, features['atk_koma_w'])
+
+	return features
+
 
 def ds_from_features(features, y_features):
 	koma_b = []
