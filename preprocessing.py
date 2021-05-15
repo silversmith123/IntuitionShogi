@@ -115,25 +115,33 @@ def update_features(board, move, features):
 	def reverse(sq):
 		return shogi.SQUARES_L90[shogi.SQUARES_L90[sq]]
 
-	def reset_atk_feature(piece_type, square, occupied, turn, feature):
-		moves = board.attacks_from(piece_type, square, occupied, turn)
+	def reset_atk_feature(piece_type, square, occupied, color, feature):
+		moves = board.attacks_from(piece_type, square, occupied, color)
 		sq = shogi.bit_scan(moves)
 		while sq != -1 and sq is not None:
-			if turn == shogi.BLACK:
+			if color == shogi.BLACK and board.turn == shogi.BLACK:
 				feature[sq][piece_type] -= 1
+			elif color == shogi.WHITE and board.turn == shogi.BLACK:
+				feature[sq][piece_type] -= 1
+			elif color == shogi.BLACK and board.turn == shogi.WHITE:
+				feature[reverse(sq)][piece_type] -= 1
 			else:
 				feature[reverse(sq)][piece_type] -= 1
 			sq = shogi.bit_scan(moves, sq + 1)
 		return feature
 
-	def add_atk_feature(piece_type, square, occupied, turn, feature):
-		moves = board.attacks_from(piece_type, square, occupied, turn)
+	def add_atk_feature(piece_type, square, occupied, color, feature):
+		moves = board.attacks_from(piece_type, square, occupied, color)
 		sq = shogi.bit_scan(moves)
 		while sq != -1 and sq is not None:
-			if turn == shogi.BLACK:
+			if color == shogi.BLACK and board.turn == shogi.BLACK:
+				feature[sq][piece_type] += 1
+			elif color == shogi.WHITE and board.turn == shogi.BLACK:
+				feature[sq][piece_type] += 1
+			elif color == shogi.BLACK and board.turn == shogi.WHITE:
 				feature[reverse(sq)][piece_type] += 1
 			else:
-				feature[sq][piece_type] += 1
+				feature[reverse(sq)][piece_type] += 1
 			sq = shogi.bit_scan(moves, sq + 1)
 		return feature
 
