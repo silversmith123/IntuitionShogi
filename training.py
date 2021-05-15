@@ -109,23 +109,24 @@ def learn():
 	tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
 	board_features = []
 	best_features = []
-	for csa_name in itertools.islice(glob.glob("./kif/*/*.csa"), 1):
+	for csa_name in itertools.islice(glob.glob("./kif/*/*.csa"), 100):
 		logging.info(csa_name)
 		kif = CSA.Parser().parse_str(open(csa_name).read())
 		board = shogi.Board(kif[0]['sfen'])
+		prev_features = preprocessing.board_to_features(board)
 		for best_move in kif[0]['moves']:
 			for cand_move in shogi.LegalMoveGenerator(board):
 				move_features = []
 				if cand_move.usi() == best_move:
 					continue
-				board.push(cand_move)
-				move_features.append(preprocessing.board_to_features(board))
+				move_features.append(preprocessing.update_features(board, cand_move, prev_features))
 				board.pop()
 			board.push(shogi.Move.from_usi(best_move))
 			if len(move_features) == 0:
 				continue
 			board_features.append(move_features)
-			best_features.append(preprocessing.board_to_features(board))
+			prev_features = preprocessing.board_to_features(board)
+			best_features.append(prev_features)
 
 	learn_set = preprocessing.ds_from_features(board_features, best_features)
 
