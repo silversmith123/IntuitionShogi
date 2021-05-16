@@ -21,9 +21,7 @@ class CUI:
 		inputs_hand_koma_w = np.array([self.features['hand_koma_w']])
 		inputs_atk_koma_b = np.array([self.features['atk_koma_b']])
 		inputs_atk_koma_w = np.array([self.features['atk_koma_w']])
-		inputs_difence_koma_b = np.array([self.features['difence_koma_b']])
-		inputs_difence_koma_w = np.array([self.features['difence_koma_w']])
-		eval = float(self.model.call({'inputs_koma_b': inputs_koma_b, 'inputs_koma_w': inputs_koma_w, 'inputs_hand_koma_b':inputs_hand_koma_b, 'inputs_hand_koma_w':inputs_hand_koma_w, 'inputs_atk_koma_b': inputs_atk_koma_b, 'inputs_atk_koma_w': inputs_atk_koma_w, 'inputs_difence_koma_b':inputs_difence_koma_b, 'inputs_difence_koma_w':inputs_difence_koma_w}))
+		eval = float(self.model.call({'inputs_koma_b': inputs_koma_b, 'inputs_koma_w': inputs_koma_w, 'inputs_hand_koma_b':inputs_hand_koma_b, 'inputs_hand_koma_w':inputs_hand_koma_w, 'inputs_atk_koma_b': inputs_atk_koma_b, 'inputs_atk_koma_w': inputs_atk_koma_w}))
 		return eval
 
 	def forward(self, move):
@@ -52,7 +50,7 @@ class CUI:
 					line += ' ' +str(val)
 				print(line)
 
-		for type in ['koma_b', 'koma_w', 'atk_koma_b', 'atk_koma_w', 'difence_koma_b', 'difence_koma_w']:
+		for type in ['koma_b', 'koma_w', 'atk_koma_b', 'atk_koma_w']:
 			print(type)
 			_print(self.features[type])
 
