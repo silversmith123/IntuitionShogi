@@ -141,8 +141,6 @@ class IntuitionModel(Model):
 			tgt['inputs_atk_koma_w'] = data['atk_koma_w']
 			tgt['inputs_hand_koma_b'] = data['hand_koma_b']
 			tgt['inputs_hand_koma_w'] = data['hand_koma_w']
-			tgt['inputs_difence_koma_b'] = data['difence_koma_b']
-			tgt['inputs_difence_koma_w'] = data['difence_koma_w']
 
 			y_pred = self(tgt, training=True)
 
@@ -153,8 +151,6 @@ class IntuitionModel(Model):
 			y_tgt['inputs_atk_koma_w'] = tf.stack([data['y_atk_koma_w'] for i in range(data['koma_b'].shape[0])])
 			y_tgt['inputs_hand_koma_b'] = tf.stack([data['y_hand_koma_b'] for i in range(data['koma_b'].shape[0])])
 			y_tgt['inputs_hand_koma_w'] = tf.stack([data['y_hand_koma_w'] for i in range(data['koma_b'].shape[0])])
-			y_tgt['inputs_difence_koma_b'] = tf.stack([data['y_difence_koma_b'] for i in range(data['koma_b'].shape[0])])
-			y_tgt['inputs_difence_koma_w'] = tf.stack([data['y_difence_koma_w'] for i in range(data['koma_b'].shape[0])])
 
 			y = self(y_tgt, training=True)
 

@@ -1,5 +1,6 @@
 import datetime
 import glob
+import argparse
 import itertools
 import logging
 import numpy as np
@@ -12,7 +13,7 @@ import preprocessing
 import model
 
 
-def learn():
+def learn(kif_num, epoch_num):
 	logging.basicConfig(format='%(asctime)s:%(message)s', level=logging.DEBUG)
 	log_dir = "./logs/fit/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 	original_model = model.IntuitionModel()
@@ -20,7 +21,7 @@ def learn():
 	tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
 	board_features = []
 	best_features = []
-	for csa_name in itertools.islice(glob.glob("./kif/*/*.csa"), 100):
+	for csa_name in itertools.islice(glob.glob("./kif/*/*.csa"), kif_num):
 		logging.info(csa_name)
 		kif = CSA.Parser().parse_str(open(csa_name).read())
 		board = shogi.Board(kif[0]['sfen'])
@@ -41,7 +42,11 @@ def learn():
 
 	learn_set = preprocessing.ds_from_features(board_features, best_features)
 
-	original_model.fit(learn_set, epochs=1, callbacks=[tensorboard_callback])
+	original_model.fit(learn_set, epochs=epoch_num, callbacks=[tensorboard_callback])
 	original_model.save('./model/intuitionshogi.pb')
 
-learn()
+parser = argparse.ArgumentParser()
+parser.add_argument('--kif_num', type=int, default=5)
+parser.add_argument('--epochs', type=int, default=10)
+args = parser.parse_args()
+learn(args.kif_num, args.epochs)
