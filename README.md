@@ -7,3 +7,7 @@ GPL v3ライセンスです。
 `python training.py`
 CUI実行コマンド
 `python main.py`
+terraformコマンド
+`terraform plan -var-file=**.tfvars`
+`terraform apply -var-file=**.tfvars`
+`terraform destroy -var-file=**.tfvars`
