@@ -13,7 +13,7 @@ def load_hcpe(hcpe_num):
 	logging.basicConfig(format='%(asctime)s:%(message)s', level=logging.DEBUG)
 	board_data = {}
 	y = []
-	for hcpe_name in itertools.islice(glob.glob("./hcpe/*.hcpe"), hcpe_num):
+	for hcpe_name in itertools.islice(glob.glob("./hcpe/**/*.hcpe"), hcpe_num):
 		logging.info(hcpe_name)
 		hcpes = np.fromfile(hcpe_name, dtype=cshogi.HuffmanCodedPosAndEval)
 		board = cshogi.Board()
@@ -27,8 +27,6 @@ def load_hcpe(hcpe_num):
 			for key in feature.keys():
 				board_data[key].append(feature[key])
 			y.append(item['eval'])
-			#if len(y) > 10000:
-			#	break
 
 	#board_data = {}
 	for key in feature.keys():
