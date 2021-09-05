@@ -1,0 +1,37 @@
+version: "3.9"
+services:
+  elasticsearch:
+    container_name: elasticsearch
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.13.0
+    volumes:
+      - esdata:/usr/share/elasticsearch/data
+    environment:
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms2G -Xmx2G"
+    ports:
+      - 19200:9200
+    networks:
+      - intuitionshogi
+  kibana:
+    container_name: kibana
+    image: docker.elastic.co/kibana/kibana:7.13.0
+    ports:
+      - 15601:5601
+    depends_on:
+      - elasticsearch
+    networks:
+      - intuitionshogi
+  logstash:
+    container_name: logstash
+    image: docker.elastic.co/logstash/logstash:7.13.0
+    depends_on:
+      - elasticsearch
+    networks:
+      - intuitionshogi
+
+volumes:
+  esdata:
+    driver: local
+
+networks:
+  intuitionshogi:
