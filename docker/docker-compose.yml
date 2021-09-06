@@ -24,6 +24,16 @@ services:
   logstash:
     container_name: logstash
     image: docker.elastic.co/logstash/logstash:7.13.0
+    volumes:
+      - ls_data:/usr/share/logstash/data
+      - ../analysis/csv:/tmp/hcpe
+      - type: bind
+        source: "../analysis/logstash/config/docker.conf"
+        target: "/usr/share/logstash/pipeline/hcpe.conf"
+    environment:
+      - "ES_JAVA_OPTS=-Xms1G -Xmx1G"
+    ports:
+      - 19600:9600
     depends_on:
       - elasticsearch
     networks:
@@ -31,6 +41,8 @@ services:
 
 volumes:
   esdata:
+    driver: local
+  ls_data:
     driver: local
 
 networks:

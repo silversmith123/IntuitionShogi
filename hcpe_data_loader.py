@@ -21,8 +21,6 @@ def load_hcpe(hcpe_num):
 			board_data[key] = []
 		for item in hcpes:
 			board.set_hcp(item['hcp'])
-			if board.turn != cshogi.BLACK:
-				continue
 			feature = hcpe_preprocessing.cnn_board_to_features(board)
 			for key in feature.keys():
 				board_data[key].append(feature[key])

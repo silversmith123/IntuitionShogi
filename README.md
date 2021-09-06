@@ -11,3 +11,5 @@ terraformコマンド
 `terraform plan -var-file=**.tfvars`
 `terraform apply -var-file=**.tfvars`
 `terraform destroy -var-file=**.tfvars`
+ELKデータ投入コマンド
+`python -m analysis.data_throw`
