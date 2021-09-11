@@ -18,7 +18,7 @@ def load_hcpe(hcpe_num):
 		hcpes = np.fromfile(hcpe_name, dtype=cshogi.HuffmanCodedPosAndEval)
 		board = cshogi.Board()
 		for key in hcpe_preprocessing.cnn_board_to_features(board).keys():
-			board_data[key] = []
+			board_data.setdefault(key, [])
 		for item in hcpes:
 			board.set_hcp(item['hcp'])
 			feature = hcpe_preprocessing.cnn_board_to_features(board)

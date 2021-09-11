@@ -13,6 +13,7 @@ class basic_multiply_layer(tf.keras.layers.Layer):
 		super(basic_multiply_layer, self).__init__(name=name)
 		self.w = weight_variable([0.0, 100.0, 300.0, 400.0, 500.0, 600.0, 800.0, 1000.0, 2000.0, 600.0, 650.0, 700.0, 1000.0, 1100.0, 1200.0, 0.0, 0.0, -100.0, -300.0, -400.0, -500.0, -600.0, -800.0, -1000.0, -2000.0, -600.0, -650.0, -700.0, -1000.0, -1100.0, -1200.0])
 
+	@tf.function
 	def call(self, inputs):
 		return tf.multiply(inputs,self.w)
 
@@ -22,18 +23,21 @@ class motikoma_multiply_layer(tf.keras.layers.Layer):
 		super(motikoma_multiply_layer, self).__init__(name=name)
 		self.w = weight_variable([100.0, 300.0, 400.0, 500.0, 600.0, 800.0, 1000.0])
 
+	@tf.function
 	def call(self, inputs):
 		return tf.multiply(inputs,self.w)
 
 class reduce_sum_layer(tf.keras.layers.Layer):
 	def __init__(self, units=32, input_dim=32, name=''):
 		super(reduce_sum_layer, self).__init__(name=name)
+	@tf.function
 	def call(self, inputs):
 		return tf.reduce_sum(inputs, axis=-1)
 
 class math_log1p_layer(tf.keras.layers.Layer):
 	def __init__(self, units=32, input_dim=32, name=''):
 		super(math_log1p_layer, self).__init__(name=name)
+	@tf.function
 	def call(self, inputs):
 		return tf.math.log1p(inputs)
 
