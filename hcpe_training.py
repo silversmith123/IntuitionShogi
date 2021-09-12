@@ -15,29 +15,26 @@ def learn(hcpe_num, epoch_num, batch_size):
 	model = hcpe_model.CNNModel()
 	model.compile(optimizer="Adam", loss="mse", metrics=["mae"])
 	tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
-	learn_set = hcpe_data_loader.load_hcpe(hcpe_num)
-	for batch in learn_set.batch(batch_size, drop_remainder=True):
+
+	for learn_set, y in  hcpe_data_loader.load_hcpe(hcpe_num, batch_size):
 		
 		train_size = int(0.7 * batch_size)
 		train_set = {}
-		for key in batch.keys():
-			train_set[key] = batch[key][:train_size]
-		y_train = train_set['y']
-		del train_set['y']
+		for key in learn_set.keys():
+			train_set[key] = learn_set[key][:train_size]
+		y_train = y[:train_size]
 
 		test_size = int(0.15 * batch_size)
 		test_set = {}
-		for key in batch.keys():
-			test_set[key] = batch[key][train_size:train_size + test_size]
-		y_test = test_set['y']
-		del test_set['y']
+		for key in learn_set.keys():
+			test_set[key] = learn_set[key][train_size:train_size + test_size]
+		y_test = y[train_size:train_size + test_size]
 
 		val_size = int(0.15 * batch_size)
 		val_set = {}
-		for key in batch.keys():
-			val_set[key] = batch[key][train_size + test_size:]
-		y_val = val_set['y']
-		del val_set['y']
+		for key in learn_set.keys():
+			val_set[key] = learn_set[key][train_size + test_size:]
+		y_val = y[train_size + test_size:]
 
 		history = model.fit(train_set, y_train, batch_size=64, epochs=epoch_num, validation_data=(val_set, y_val), callbacks=[tensorboard_callback])
 		print('\nhistory dict:', history.history)

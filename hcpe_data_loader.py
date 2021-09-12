@@ -8,7 +8,7 @@ import cshogi
 import hcpe_preprocessing
 
 
-def load_hcpe(hcpe_num):
+def load_hcpe(hcpe_num, batch_size):
 
 	logging.basicConfig(format='%(asctime)s:%(message)s', level=logging.DEBUG)
 	board_data = {}
@@ -25,10 +25,12 @@ def load_hcpe(hcpe_num):
 			for key in feature.keys():
 				board_data[key].append(feature[key])
 			y.append(item['eval'])
-
-	#board_data = {}
-	for key in feature.keys():
-		board_data[key] = np.array(board_data[key], dtype=float)
-	board_data['y'] = np.array(y, dtype=float)
-
-	return tf.data.Dataset.from_tensor_slices(board_data)
+			if len(y) % batch_size == 0:
+				for key in feature.keys():
+					board_data[key] = np.array(board_data[key], dtype=float)
+				y = np.array(y, dtype=float)
+				logging.info('yield board_data')
+				yield board_data, y
+				for key in hcpe_preprocessing.cnn_board_to_features(board).keys():
+					board_data[key] = []
+				y = []

@@ -20,7 +20,7 @@ def cnn_board_to_features(board):
 
 	features = {}
 	features['koma_board'] = koma_board
-	features['hand_koma_b'] = hand_koma_b
-	features['hand_koma_w'] = hand_koma_w
+	features['hand_koma_b'] = np.array(hand_koma_b, dtype=int)
+	features['hand_koma_w'] = np.array(hand_koma_w, dtype=int)
 
 	return features
