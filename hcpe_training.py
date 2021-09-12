@@ -14,7 +14,7 @@ def learn(hcpe_num, epoch_num, batch_size):
 	log_dir = "./logs/fit/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 	model = hcpe_model.CNNModel()
 	model.compile(optimizer="Adam", loss="mse", metrics=["mae"])
-	tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
+	#tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
 
 	for learn_set, y in  hcpe_data_loader.load_hcpe(hcpe_num, batch_size):
 		
@@ -36,7 +36,8 @@ def learn(hcpe_num, epoch_num, batch_size):
 			val_set[key] = learn_set[key][train_size + test_size:]
 		y_val = y[train_size + test_size:]
 
-		history = model.fit(train_set, y_train, batch_size=64, epochs=epoch_num, validation_data=(val_set, y_val), callbacks=[tensorboard_callback])
+		#history = model.fit(train_set, y_train, batch_size=64, epochs=epoch_num, validation_data=(val_set, y_val), callbacks=[tensorboard_callback])
+		history = model.fit(train_set, y_train, batch_size=64, epochs=epoch_num, validation_data=(val_set, y_val))
 		print('\nhistory dict:', history.history)
 		print('\n# Evaluate on test data')
 		results = model.evaluate(test_set, y_test, batch_size=128)

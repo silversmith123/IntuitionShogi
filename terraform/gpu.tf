@@ -7,8 +7,7 @@ resource "aws_spot_instance_request" "spot_gpu_worker" {
   #! /bin/bash
   cd /home/ec2-user
   git clone https://github.com/silversmith123/IntuitionShogi.git
-  conda config --set auto_activate_base true
-  sudo -u ec2-user ~/anaconda3/bin/pip install -r IntuitionShogi/requirements.txt
+  sudo -u ec2-user /home/ec2-user/anaconda3/envs/tensorflow2_latest_p37/bin/pip install -r IntuitionShogi/requirements.txt
   sudo curl -L https://github.com/kahing/goofys/releases/latest/download/goofys -o /usr/local/bin/goofys
   sudo chmod a+x /usr/local/bin/goofys
   export AWS_ACCESS_KEY_ID="${var.AWS_ACCESS_KEY_ID}"

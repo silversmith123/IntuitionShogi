@@ -1,4 +1,2 @@
-numpy
-tensorflow
 cshogi @ git+https://github.com/TadaoYamaoka/cshogi@b781d00219407cb85fe83168578c8e881dd52c61
 python-shogi
