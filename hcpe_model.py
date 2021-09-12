@@ -4,7 +4,6 @@ import tensorflow as tf
 from tensorflow.keras.layers import Input, Dense, Multiply, Concatenate
 from tensorflow.keras import Sequential, Model
 
-@tf.function
 def weight_variable(list):
     initial = tf.constant(list)
     return tf.Variable(initial)
